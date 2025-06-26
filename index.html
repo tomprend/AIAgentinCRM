@@ -14,22 +14,21 @@
             user-select: none; /* Prevent text selection during drag */
             z-index: 1000; /* Ensure it floats above other content */
             touch-action: none; /* Prevents default touch actions like scrolling/zooming */
-            /* Ensure the image scales properly within the agent container */
             display: flex;
             align-items: center;
             justify-content: center;
+            text-align: center; /* Center the text inside the agent */
+            /* Initial size and background from the request */
+            width: 300px; /* Increased width for better text visibility */
+            height: 100px; /* Adjusted height */
+            background-color: #f97316; /* Tailwind orange-500 */
+            color: white;
+            padding: 1rem;
+            border-radius: 0.75rem; /* Tailwind rounded-xl */
         }
 
         #ai-agent.dragging {
             cursor: grabbing; /* Cursor when actively dragging */
-        }
-
-        /* Style for the image inside the AI agent */
-        #ai-agent img {
-            width: 100%; /* Make the image fill the container */
-            height: 100%; /* Make the image fill the container */
-            object-fit: contain; /* Ensure the entire image is visible within the container */
-            border-radius: 9999px; /* This might not be effective for oval images, but good practice */
         }
     </style>
 </head>
@@ -205,62 +204,51 @@
     </div>
 
     <!-- AI Agent -->
-    <div id="ai-agent" class="w-64 h-32 shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:scale-105"
-         style="top: 20px; right: 20px;">
-        <!-- Replaced SVG with image tag and added an onerror for fallback -->
-        <img src="AIagent.jpg" alt="AI Agent Assistant" onerror="this.onerror=null; this.src='https://placehold.co/256x128/cccccc/000000?text=AI+Agent+Image';" />
+    <div id="ai-agent" class="shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:scale-105"
+         style="top: 20px; left: calc(100vw - 320px);">
+         <!-- Initial position set to be 20px from the top and roughly 20px from the right, but using 'left' for easier calculation -->
+        <p class="text-base font-semibold">Hey! I've just created that case for you that the customer needed</p>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const aiAgent = document.getElementById('ai-agent');
             let isDragging = false;
-            let currentX;
-            let currentY;
-            let initialX;
-            let initialY;
-            let xOffset = 0;
-            let yOffset = 0;
+            let xOffset; // Renamed from initialX to better reflect its purpose
+            let yOffset; // Renamed from initialY to better reflect its purpose
 
             // Function to handle start of drag for both mouse and touch
             function dragStart(e) {
-                // Prevent default touch behavior (e.g., scrolling)
-                if (e.type === "touchstart") {
-                    initialX = e.touches[0].clientX - xOffset;
-                    initialY = e.touches[0].clientY - yOffset;
-                } else {
-                    initialX = e.clientX - xOffset;
-                    initialY = e.clientY - yOffset;
-                }
+                isDragging = true;
+                aiAgent.classList.add('dragging');
 
-                // Only start dragging if the event target is the agent itself
-                if (e.target === aiAgent || aiAgent.contains(e.target)) { // Allow dragging from children elements
-                    isDragging = true;
-                    aiAgent.classList.add('dragging');
-                }
+                const clientX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
+                const clientY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
+
+                // Calculate the offset of the mouse/touch position from the element's top-left corner
+                xOffset = clientX - aiAgent.getBoundingClientRect().left;
+                yOffset = clientY - aiAgent.getBoundingClientRect().top;
+
+                // Stop text selection or other default behaviors
+                e.preventDefault();
             }
 
             // Function to handle drag for both mouse and touch
             function drag(e) {
                 if (isDragging) {
-                    e.preventDefault(); // Prevent default behavior like text selection on drag
+                    const clientX = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
 
-                    if (e.type === "touchmove") {
-                        currentX = e.touches[0].clientX - initialX;
-                        currentY = e.touches[0].clientY - initialY;
-                    } else {
-                        currentX = e.clientX - initialX;
-                        currentY = e.clientY - initialY;
-                    }
+                    // Calculate the new position of the element
+                    // The element's new top-left is current mouse/touch position minus the offset calculated at dragStart
+                    const newLeft = clientX - xOffset;
+                    const newTop = clientY - yOffset;
 
-                    xOffset = currentX;
-                    yOffset = currentY;
+                    aiAgent.style.left = `${newLeft}px`;
+                    aiAgent.style.top = `${newTop}px`;
 
-                    // Apply the new position
-                    // We're setting 'left' and 'top' to control position relative to the viewport
-                    // This keeps it floating regardless of scroll
-                    aiAgent.style.left = `${currentX}px`;
-                    aiAgent.style.top = `${currentY}px`;
+                    // Stop text selection or other default behaviors
+                    e.preventDefault();
                 }
             }
 
@@ -280,13 +268,10 @@
             document.addEventListener('touchend', dragEnd);
             document.addEventListener('touchmove', drag);
 
-            // Set initial position based on CSS (top: 20px, right: 20px)
-            // Need to convert 'right' to 'left' for consistent dragging logic
-            const rect = aiAgent.getBoundingClientRect();
-            aiAgent.style.left = `${rect.left}px`;
-            aiAgent.style.top = `${rect.top}px`;
-            xOffset = rect.left;
-            yOffset = rect.top;
+            // Set the initial 'left' position dynamically based on viewport width
+            // This ensures it starts correctly and doesn't conflict with 'right' after being dragged
+            // Initial position is 20px from top and about 20px from right edge
+            aiAgent.style.left = `${window.innerWidth - aiAgent.offsetWidth - 20}px`;
         });
     </script>
 </body>
